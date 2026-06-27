@@ -190,6 +190,70 @@ body {
   color: var(--neon-cyan);
   text-shadow: 0 0 12px rgba(77, 214, 255, 0.5);
 }
+/* ---------- Capa (tela de título) ---------- */
+.cover {
+  position: relative;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: linear-gradient(#2f7fc4, #5ba6e0 55%, #a9d8f2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 -34px 44px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.cover::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 48px;
+  background: linear-gradient(#6cc24a, #4a8a34);
+  border-top: 3px solid #bff08a;
+}
+.cover-sun {
+  position: absolute;
+  top: 20px; right: 34px;
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: #fffceb;
+  box-shadow: 0 0 40px 14px rgba(255, 250, 210, 0.85);
+}
+.cover-cloud {
+  position: absolute;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  filter: blur(0.5px);
+}
+.cover-cloud::before {
+  content: "";
+  position: absolute;
+  top: -10px; left: 14px;
+  width: 34px; height: 26px;
+  background: inherit;
+  border-radius: 50%;
+}
+.cover-cloud.c1 { width: 70px; top: 38px; left: 60px; }
+.cover-cloud.c2 { width: 54px; top: 66px; left: 230px; }
+.cover-tank { position: absolute; bottom: 32px; line-height: 0; z-index: 2; }
+.cover-tank.left { left: 26px; }
+.cover-tank.right { right: 26px; transform: scaleX(-1); }
+.cover-tank img { image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.25)); }
+.cover-title {
+  position: absolute;
+  left: 0; right: 0; top: 46px;
+  text-align: center;
+  z-index: 3;
+  font-size: 80px;
+  line-height: 1;
+  letter-spacing: 12px;
+  font-weight: 900;
+  background: linear-gradient(#fff0b0, #ffd166 42%, #ff5e8a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+
 .how-to {
   text-align: left;
   margin: 0 auto 26px;
