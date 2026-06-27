@@ -2362,7 +2362,29 @@ function wireMenu() {
     startGame(SETUPS.pvc);         // jogador contra o COM
   });
   document.getElementById('open-shop').addEventListener('click', openShop);
+  document.getElementById('open-credits').addEventListener('click', showCredits);
   renderMenuExtras();
+}
+
+// Tela de créditos
+function showCredits() {
+  overlayBox.innerHTML = `
+    <h1 style="font-size:46px;letter-spacing:5px">⭐ ${pixelIconImg('trophy', 4)} CRÉDITOS ⭐</h1>
+    <p class="subtitle">TANKY — Batalha de Tanques por Turnos</p>
+    <div class="credits-box">
+      <p class="cr-role">✨ Criação · Programação · Arte · Game design ✨</p>
+      <p class="cr-name">🎮 Caio Henrique Barros Vilela 🎮</p>
+      <p class="cr-line">🎉 Meu primeiro jogo — 27 de junho de 2026 🎉</p>
+      <p class="cr-line">💻 Feito do zero em HTML, CSS e JavaScript</p>
+      <p class="cr-line">🤖 Agradecimento especial ao Claude (Anthropic) pela ajuda 🙏</p>
+      <p class="cr-line cr-family">❤️ Este jogo foi feito para a minha família ❤️</p>
+    </div>
+    <div class="btn-row" style="margin-top:18px">
+      <a class="start-btn cr-site" href="https://cacaivilela.github.io/" target="_blank" rel="noopener">MEU SITE</a>
+      <button id="cr-back" class="start-btn" style="background:linear-gradient(#64748b,#475569);box-shadow:0 6px 0 #334155">VOLTAR</button>
+    </div>
+  `;
+  document.getElementById('cr-back').addEventListener('click', showMenu);
 }
 
 // Saldo de moedas + seletores de cenário/modo/skins (só o que está liberado)
