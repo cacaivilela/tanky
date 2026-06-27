@@ -200,7 +200,7 @@ body {
   border-radius: 16px;
   overflow: hidden;
   margin-bottom: 16px;
-  background: linear-gradient(#2f7fc4, #5ba6e0 55%, #a9d8f2);
+  background: linear-gradient(#0a1730, #112a55 55%, #1b3e7a);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: inset 0 -34px 44px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
