@@ -2388,7 +2388,7 @@ function showCredits() {
       <p class="cr-line">🎉 Meu primeiro jogo — 27 de junho de 2026 🎉</p>
       <p class="cr-line">💻 Feito do zero em HTML, CSS e JavaScript</p>
       <p class="cr-line">🤖 Agradecimento especial ao Claude (Anthropic) pela ajuda 🙏</p>
-      <p class="cr-line cr-family">❤️ Este jogo foi feito para a minha família ❤️</p>
+      <p class="cr-line cr-family">❤️ Este jogo foi feito para a minha família e também para os meus amigos ❤️</p>
     </div>
     <div class="btn-row" style="margin-top:18px">
       <a class="start-btn cr-site" href="https://cacaivilela.github.io/" target="_blank" rel="noopener">MEU SITE</a>
