@@ -2425,29 +2425,46 @@ function openShop() {
   document.getElementById('shop-back').addEventListener('click', showMenu);
 }
 
+const downloading = {}; // packId -> porcentagem do download em andamento
+
 function renderShop() {
   const list = document.getElementById('shop-list');
+  if (!list) return;
   list.innerHTML = '';
   for (const p of DLC_PACKS) {
     const owned = ownsPack(p.id);
+    const dl = downloading[p.id] != null;
     const card = document.createElement('div');
     card.className = 'dlc-card' + (owned ? ' owned' : '');
+
+    let right;
+    if (owned) {
+      right = `<button class="dlc-buy" disabled>INSTALADO</button>`;
+    } else if (dl) {
+      right = `<div class="dl-box">
+        <div class="dl-bar"><div class="dl-fill" id="dl-${p.id}" style="width:${downloading[p.id]}%"></div></div>
+        <span class="dl-pct" id="dlp-${p.id}">${Math.floor(downloading[p.id])}%</span>
+      </div>`;
+    } else {
+      right = `<button class="dlc-buy">${pixelIconImg('coin', 2) + ' ' + p.price}</button>`;
+    }
+
     card.innerHTML = `
       <div class="dlc-ico">${pixelIconImg(owned ? p.icon : 'lock', 3)}</div>
       <div class="dlc-info">
         <div class="dlc-name">${p.name}</div>
-        <div class="dlc-desc">${p.desc}</div>
+        <div class="dlc-desc">${dl ? 'Baixando…' : p.desc}</div>
       </div>
-      <button class="dlc-buy">${owned ? 'ADQUIRIDO' : pixelIconImg('coin', 2) + ' ' + p.price}</button>
+      ${right}
     `;
-    const btn = card.querySelector('.dlc-buy');
-    if (owned) {
-      btn.disabled = true;
-    } else {
+
+    if (!owned && !dl) {
+      const btn = card.querySelector('.dlc-buy');
       btn.addEventListener('click', () => {
-        if (buyPack(p.id)) {
-          renderShop();
-          renderMenuExtrasSafe();
+        if (chargePack(p.id)) {
+          const sc = document.getElementById('shop-coins');
+          if (sc) sc.textContent = dlcState.coins;
+          startDownload(p.id);
         } else {
           btn.classList.add('cant');
           setTimeout(() => btn.classList.remove('cant'), 300);
@@ -2458,10 +2475,23 @@ function renderShop() {
   }
 }
 
-// Atualiza o saldo do cabeçalho da loja (os seletores do menu são refeitos ao voltar)
-function renderMenuExtrasSafe() {
-  const sc = document.getElementById('shop-coins');
-  if (sc) sc.textContent = dlcState.coins;
+// Anima o "download" do DLC e instala ao chegar em 100%
+function startDownload(id) {
+  downloading[id] = 0;
+  renderShop();
+  const timer = setInterval(() => {
+    downloading[id] = Math.min(100, downloading[id] + 4 + Math.random() * 9);
+    const fill = document.getElementById('dl-' + id);
+    const pct = document.getElementById('dlp-' + id);
+    if (fill) fill.style.width = downloading[id] + '%';
+    if (pct) pct.textContent = Math.floor(downloading[id]) + '%';
+    if (downloading[id] >= 100) {
+      clearInterval(timer);
+      delete downloading[id];
+      finishInstall(id); // só fica disponível depois de baixar
+      renderShop();
+    }
+  }, 120);
 }
 
 // ============================================================
@@ -2585,6 +2615,7 @@ function showGameOver(winnerTeam, reward) {
       <button id="restart-btn" class="start-btn">JOGAR DE NOVO</button>
       <button id="menu-btn" class="start-btn" style="background:linear-gradient(#64748b,#475569);box-shadow:0 6px 0 #334155">MENU</button>
     </div>
+    <a class="credit" href="https://cacaivilela.github.io/" target="_blank" rel="noopener">Feito por Caio Henrique Barros Vilela</a>
   `;
   overlay.classList.remove('hidden');
   document.getElementById('restart-btn').addEventListener('click', () => {

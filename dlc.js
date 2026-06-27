@@ -226,6 +226,23 @@ function buyPack(id) {
 
 function addCoins(n) { dlcState.coins += n; dlcSave(); }
 
+// Compra em duas etapas: cobra as moedas (chargePack) e, após o "download",
+// instala o pacote (finishInstall).
+function canBuyPack(id) {
+  const p = DLC_PACKS.find(p => p.id === id);
+  return !!p && !ownsPack(id) && dlcState.coins >= p.price;
+}
+function chargePack(id) {
+  const p = DLC_PACKS.find(p => p.id === id);
+  if (!canBuyPack(id)) return false;
+  dlcState.coins -= p.price;
+  dlcSave();
+  return true;
+}
+function finishInstall(id) {
+  if (!ownsPack(id)) { dlcState.owned.push(id); dlcSave(); }
+}
+
 // Listas só com o que está liberado (mais o conteúdo grátis)
 function unlockedScenes() { return Object.values(SCENES).filter(s => packUnlocked(s.pack)); }
 function unlockedModes()  { return Object.values(GAME_MODES).filter(m => packUnlocked(m.pack)); }

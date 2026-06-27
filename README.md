@@ -1,5 +1,7 @@
 # TANKY — Batalha de Tanques por Turnos
 
+Feito por **Caio Henrique Barros Vilela**.
+
 Jogo de artilharia por turnos em **canvas puro** (HTML + CSS + JavaScript), sem dependências e sem build. Terreno destrutível pixel a pixel, física de projéteis com vento e gravidade, e uma porção de armas, modos, cenários e DLCs.
 
 ## Como jogar
