@@ -2363,6 +2363,17 @@ function wireMenu() {
   });
   document.getElementById('open-shop').addEventListener('click', openShop);
   document.getElementById('open-credits').addEventListener('click', showCredits);
+  const installBtn = document.getElementById('install-app');
+  if (installBtn) {
+    installBtn.style.display = deferredInstallPrompt ? 'inline-block' : 'none';
+    installBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      try { await deferredInstallPrompt.userChoice; } catch (e) {}
+      deferredInstallPrompt = null;
+      updateInstallButton();
+    });
+  }
   renderMenuExtras();
 }
 
@@ -2655,6 +2666,30 @@ function loop() {
   for (let i = 0; i < steps; i++) update();
   draw();
   requestAnimationFrame(loop);
+}
+
+// ============================================================
+//  PWA — instalar como app + service worker (funciona offline)
+// ============================================================
+let deferredInstallPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e; // guarda para o botão "INSTALAR APP"
+  updateInstallButton();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+});
+function updateInstallButton() {
+  const b = document.getElementById('install-app');
+  if (b) b.style.display = deferredInstallPrompt ? 'inline-block' : 'none';
 }
 
 // Preenche os ícones de pixel art dos placeholders (menu, HUD) e liga o menu
