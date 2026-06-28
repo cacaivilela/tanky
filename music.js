@@ -1,38 +1,44 @@
 // ============================================================
-//  TANKY — Música de fundo (chiptune gerado por código)
+//  TANKY — Música de fundo (groove "slow funk" gerado por código)
 //  Web Audio API: sem arquivos de áudio, funciona offline.
-//  Toca um loop alegre estilo 8-bit; botão liga/desliga.
+//  Baixo sincopado + bateria (bumbo/caixa/chimbal) + levada com swing.
+//  Botão liga/desliga no canto.
 // ============================================================
 (function () {
   const KEY = 'tanky_music_on';
 
   // Frequências das notas (Hz)
   const N = {
+    C2: 65.41, D2: 73.42, E2: 82.41, F2: 87.31, G2: 98.00, A2: 110.00, B2: 123.47,
     C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
     C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
     C5: 523.25, D5: 587.33, E5: 659.25,
   };
 
-  // Melodia (colcheias) — 4 compassos sobre C · G · Am · F
-  const MELODY = [
-    'E4','G4','C5','G4','E4','G4','C5','E5',
-    'D4','G4','B4','G4','D4','G4','B4','D5',
-    'C4','E4','A4','E4','C4','E4','A4','C5',
-    'C4','F4','A4','F4','C4','F4','A4','G4',
-  ];
-  // Baixo (raiz dos acordes, com pausas)
+  // 2 compassos de 16 semicolcheias. Groove funk em Ré menor (dórico).
+  // Baixo bem sincopado (a alma do funk).
   const BASS = [
-    'C3', 0, 'G3', 0, 'C3', 0, 'G3', 0,
-    'G3', 0, 'D3', 0, 'G3', 0, 'D3', 0,
-    'A3', 0, 'E3', 0, 'A3', 0, 'E3', 0,
-    'F3', 0, 'C3', 0, 'F3', 0, 'C3', 0,
+    // compasso 1
+    'D2', 0, 0, 'D2', 0, 0, 'D2', 0, 'F2', 0, 0, 'G2', 0, 'A2', 0, 'C3',
+    // compasso 2
+    'D2', 0, 0, 'D2', 0, 'D2', 0, 'F2', 0, 'E2', 0, 'D2', 0, 0, 'C2', 0,
+  ];
+  // Melodia esparsa (stabs funky por cima), também 32 passos
+  const MELODY = [
+    0, 0, 0, 0, 'A4', 0, 0, 'C5', 0, 'D5', 0, 0, 'C5', 0, 'A4', 0,
+    0, 0, 'F4', 0, 'G4', 0, 'A4', 0, 0, 'C5', 0, 'A4', 0, 'G4', 0, 0,
   ];
 
-  const TEMPO = 132;                 // batidas por minuto
-  const STEP = 60 / TEMPO / 2;       // duração de uma colcheia (s)
-  const VOLUME = 0.35;               // volume geral (0..1)
+  // Bateria (posição dentro do compasso de 16 semicolcheias)
+  const KICK = new Set([0, 6, 10]);   // bumbo sincopado
+  const SNARE = new Set([4, 12]);     // caixa nos tempos 2 e 4
 
-  let ctx = null, master = null;
+  const TEMPO = 92;                  // batidas por minuto (lento, "slow")
+  const STEP = 60 / TEMPO / 4;       // duração de uma semicolcheia (s)
+  const SWING = 0.58;                // balanço: > 0.5 atrasa as semicolcheias "e"
+  const VOLUME = 0.32;               // volume geral (0..1)
+
+  let ctx = null, master = null, noiseBuf = null;
   let playing = false;
   let enabled = localStorage.getItem(KEY) !== 'off'; // ligado por padrão
   let timer = null, nextTime = 0, step = 0;
@@ -43,10 +49,14 @@
     master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
+    // Ruído branco curto, reusado para caixa e chimbal
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
 
-  // Toca uma nota curta (envelope com ataque rápido e decaimento)
-  function blip(note, time, dur, type, vol) {
+  // Nota melódica/baixo (oscilador com envelope)
+  function tone(note, time, dur, type, vol) {
     const freq = typeof note === 'string' ? N[note] : note;
     if (!freq) return;
     const osc = ctx.createOscillator();
@@ -61,12 +71,46 @@
     osc.stop(time + dur + 0.03);
   }
 
-  // Agendador com janela de antecipação (lookahead)
+  // Bumbo (seno com queda de tom)
+  function kick(time) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, time);
+    osc.frequency.exponentialRampToValueAtTime(45, time + 0.11);
+    g.gain.setValueAtTime(0.55, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.14);
+    osc.connect(g); g.connect(master);
+    osc.start(time); osc.stop(time + 0.16);
+  }
+
+  // Caixa / chimbal (ruído filtrado)
+  function noiseHit(time, dur, vol, kind) {
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter();
+    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; }
+    else { f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.9; }
+    const g = ctx.createGain();
+    src.connect(f); f.connect(g); g.connect(master);
+    g.gain.setValueAtTime(vol, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    src.start(time);
+    src.stop(time + dur + 0.02);
+  }
+
+  // Agendador com antecipação (lookahead) e swing
   function scheduler() {
-    while (nextTime < ctx.currentTime + 0.12) {
-      blip(MELODY[step % MELODY.length], nextTime, STEP * 0.9, 'square', 0.10);
-      blip(BASS[step % BASS.length], nextTime, STEP * 1.7, 'triangle', 0.16);
-      nextTime += STEP;
+    while (nextTime < ctx.currentTime + 0.15) {
+      const b = step % 16;          // posição na bateria
+      const idx = step % BASS.length;
+      tone(BASS[idx], nextTime, STEP * 1.6, 'triangle', 0.20);
+      tone(MELODY[idx], nextTime, STEP * 1.5, 'square', 0.10);
+      if (KICK.has(b)) kick(nextTime);
+      if (SNARE.has(b)) noiseHit(nextTime, 0.16, 0.26, 'snare');
+      noiseHit(nextTime, 0.035, b % 2 === 0 ? 0.06 : 0.035, 'hat'); // chimbal com balanço
+      // Avança com swing: passos pares duram mais que os ímpares
+      nextTime += (step % 2 === 0) ? STEP * (2 * SWING) : STEP * (2 * (1 - SWING));
       step++;
     }
     timer = setTimeout(scheduler, 25);
