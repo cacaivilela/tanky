@@ -1,5 +1,5 @@
 // Service worker do TANKY — guarda o jogo para funcionar offline (como app instalado)
-const CACHE = 'tanky-v6';
+const CACHE = 'tanky-v7';
 const ASSETS = [
   './',
   'index.html',

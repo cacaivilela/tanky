@@ -1115,7 +1115,7 @@ function updateTimedRain() {
     const sy = 8 + Math.random() * 80;             // começa lá no alto
     game.projectiles.push(new Projectile(
       ox, sy, (Math.random() * 2 - 1) * 0.6, 2 + Math.random() * 2,
-      { timed: true, radius: tr.weapon.radius, damage: tr.weapon.damage, color: tr.weapon.color }));
+      { timed: true, fuse: 2, radius: tr.weapon.radius, damage: tr.weapon.damage, color: tr.weapon.color }));
   }
   tr.remaining -= batch;
   if (tr.remaining <= 0) game.timedRain = null;
@@ -1445,7 +1445,7 @@ function armBomb(x, y, weapon) {
   const gy = groundBelow(x, Math.max(0, y - 2));
   const sy = gy < H ? gy : y;
   x = Math.max(16, Math.min(W - 16, x));
-  game.bombs.push({ x, y: sy, fuse: 1, justArmed: true, weapon, t: 0 });
+  game.bombs.push({ x, y: sy, fuse: weapon.fuse || 1, justArmed: true, weapon, t: 0 });
 }
 
 function spawnExplosion(x, y, color, radius) {
