@@ -2363,6 +2363,8 @@ function wireMenu() {
   });
   document.getElementById('open-shop').addEventListener('click', openShop);
   document.getElementById('open-credits').addEventListener('click', showCredits);
+  const fusionBtn = document.getElementById('open-fusion');
+  if (fusionBtn) fusionBtn.addEventListener('click', showFusion);
   const installBtn = document.getElementById('install-app');
   if (installBtn) {
     installBtn.style.display = deferredInstallPrompt ? 'inline-block' : 'none';
@@ -2525,6 +2527,144 @@ function startDownload(id) {
       renderShop();
     }
   }, 120);
+}
+
+// ============================================================
+//  Forja de Fusão — combina 2 armas e cria uma nova
+// ============================================================
+const fuse = { a: 0, b: 1 };
+
+// Texto curto com os comportamentos da arma (para a pré-visualização)
+function weaponTraits(w) {
+  const t = [];
+  if (w.cluster) t.push('espalha x' + w.cluster);
+  if (w.napalm) t.push('fogo');
+  if (w.bounce) t.push('quica x' + w.bounce);
+  if (w.magnet) t.push('teleguiado');
+  if (w.rocket) t.push('propulsão');
+  if (w.windBlast || w.knockback) t.push('empurra');
+  if (w.timed) t.push('bomba-relógio');
+  if (w.dart) t.push('dardo');
+  if (w.airstrike) t.push('bombardeio');
+  if (w.meteorstorm) t.push('meteoros');
+  if (w.meteor) t.push('meteoro');
+  if (w.blackhole) t.push('buraco negro');
+  if (w.cataclysm) t.push('cataclismo');
+  return t.length ? t.join(' · ') : 'explosão';
+}
+
+function showFusion() {
+  const pool = fusableWeapons();
+  fuse.a = Math.min(fuse.a, pool.length - 1);
+  fuse.b = Math.min(fuse.b, pool.length - 1);
+  overlayBox.innerHTML = `
+    <h1 style="font-size:38px;letter-spacing:4px">${pixelIconImg('swords', 3)} FORJA DE FUSÃO</h1>
+    <p class="subtitle">${pixelIconImg('coin', 2)} <b id="fuse-coins">${dlcState.coins}</b> moedas — cada fusão custa <b>${FUSION_COST}</b></p>
+    <p class="subtitle" style="font-size:13px;opacity:.85">Junte 2 armas e crie uma nova! Ela entra na roda de armas (Q/E) durante a batalha.</p>
+    <div id="fuse-pickers"></div>
+    <div id="fuse-preview"></div>
+    <div class="btn-row" style="margin-top:6px">
+      <button id="fuse-make" class="start-btn" style="background:linear-gradient(#c084fc,#7c3aed);box-shadow:0 6px 0 #5b21b6;color:#fff">${pixelIconImg('nuke', 2)} FUNDIR ARMAS</button>
+    </div>
+    <div class="fuse-sub">MINHAS FUSÕES</div>
+    <div id="fuse-list"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button id="fuse-back" class="start-btn" style="background:linear-gradient(#64748b,#475569);box-shadow:0 6px 0 #334155">VOLTAR</button>
+    </div>
+  `;
+  renderFusePickers();
+  renderFusePreview();
+  renderFuseList();
+  document.getElementById('fuse-make').addEventListener('click', doFuse);
+  document.getElementById('fuse-back').addEventListener('click', showMenu);
+}
+
+function fuseSelector(label, key, pool) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ld-row';
+  const render = () => {
+    const w = pool[fuse[key]];
+    wrap.innerHTML =
+      `<span class="ld-label">${label}</span>` +
+      `<button class="ld-arrow" data-d="-1">‹</button>` +
+      `<span class="ld-val">${pixelIconImg(w.icon, 2)} ${w.name}</span>` +
+      `<button class="ld-arrow" data-d="1">›</button>`;
+    wrap.querySelectorAll('.ld-arrow').forEach(btn => btn.addEventListener('click', () => {
+      fuse[key] = (fuse[key] + (+btn.dataset.d) + pool.length) % pool.length;
+      render();
+      renderFusePreview();
+    }));
+  };
+  render();
+  return wrap;
+}
+
+function renderFusePickers() {
+  const host = document.getElementById('fuse-pickers');
+  if (!host) return;
+  const pool = fusableWeapons();
+  host.innerHTML = '';
+  host.appendChild(fuseSelector('Arma A', 'a', pool));
+  host.appendChild(fuseSelector('Arma B', 'b', pool));
+}
+
+function renderFusePreview() {
+  const host = document.getElementById('fuse-preview');
+  if (!host) return;
+  const pool = fusableWeapons();
+  const w = fuseWeapons(pool[fuse.a], pool[fuse.b]);
+  host.innerHTML = `
+    <div class="fuse-card" style="border-color:${w.color}">
+      <div class="dlc-ico">${pixelIconImg(w.icon, 3)}</div>
+      <div class="dlc-info">
+        <div class="dlc-name" style="color:${w.color}">${w.name}</div>
+        <div class="dlc-desc">Dano ${w.damage} · Raio ${w.radius} · ${weaponTraits(w)}</div>
+      </div>
+    </div>`;
+}
+
+function doFuse() {
+  const btn = document.getElementById('fuse-make');
+  if (dlcState.fusions.length >= MAX_FUSIONS || dlcState.coins < FUSION_COST) {
+    btn.classList.add('cant');
+    setTimeout(() => btn.classList.remove('cant'), 300);
+    return;
+  }
+  const pool = fusableWeapons();
+  const w = fuseWeapons(pool[fuse.a], pool[fuse.b]);
+  dlcState.coins -= FUSION_COST;
+  dlcSave();
+  addFusion(w);
+  const sc = document.getElementById('fuse-coins');
+  if (sc) sc.textContent = dlcState.coins;
+  renderFuseList();
+}
+
+function renderFuseList() {
+  const host = document.getElementById('fuse-list');
+  if (!host) return;
+  if (!dlcState.fusions.length) {
+    host.innerHTML = `<p class="dlc-desc" style="text-align:center;opacity:.7;padding:8px">Nenhuma fusão ainda — crie a sua acima! (até ${MAX_FUSIONS})</p>`;
+    return;
+  }
+  host.innerHTML = '';
+  dlcState.fusions.forEach((w, i) => {
+    const card = document.createElement('div');
+    card.className = 'fuse-card';
+    card.style.borderColor = w.color;
+    card.innerHTML = `
+      <div class="dlc-ico">${pixelIconImg(w.icon, 3)}</div>
+      <div class="dlc-info">
+        <div class="dlc-name" style="color:${w.color}">${w.name}</div>
+        <div class="dlc-desc">Dano ${w.damage} · Raio ${w.radius} · ${weaponTraits(w)}</div>
+      </div>
+      <button class="dlc-buy fuse-del" style="background:linear-gradient(#f87171,#dc2626);box-shadow:0 4px 0 #991b1b;color:#fff">APAGAR</button>`;
+    card.querySelector('.fuse-del').addEventListener('click', () => {
+      removeFusion(i);
+      renderFuseList();
+    });
+    host.appendChild(card);
+  });
 }
 
 // ============================================================

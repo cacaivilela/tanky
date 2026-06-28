@@ -193,7 +193,7 @@ const GAME_MODES = {
 // ============================================================
 const SAVE_KEY = 'tanky_save_v1';
 const STARTING_COINS = 250; // bônus de boas-vindas para já dar pra comprar algo
-const dlcState = { coins: STARTING_COINS, owned: [] };
+const dlcState = { coins: STARTING_COINS, owned: [], fusions: [] };
 
 function dlcLoad() {
   try {
@@ -202,6 +202,7 @@ function dlcLoad() {
       const d = JSON.parse(raw);
       dlcState.coins = Number.isFinite(d.coins) ? d.coins : STARTING_COINS;
       dlcState.owned = Array.isArray(d.owned) ? d.owned : [];
+      dlcState.fusions = Array.isArray(d.fusions) ? d.fusions : [];
     } else {
       dlcSave(); // primeira vez: grava o bônus inicial
     }
@@ -247,7 +248,69 @@ function finishInstall(id) {
 function unlockedScenes() { return Object.values(SCENES).filter(s => packUnlocked(s.pack)); }
 function unlockedModes()  { return Object.values(GAME_MODES).filter(m => packUnlocked(m.pack)); }
 function unlockedSkins()  { return Object.values(SKINS).filter(s => packUnlocked(s.pack)); }
-// Armas base (de game.js) + extras adquiridas
-function activeWeapons()  { return WEAPONS.concat(EXTRA_WEAPONS.filter(w => ownsPack(w.pack))); }
+// ============================================================
+//  Fusão de armas — combina 2 armas em uma nova (salva no save)
+// ============================================================
+const FUSION_COST = 50;   // moedas por fusão
+const MAX_FUSIONS = 12;   // limite de fusões guardadas
+
+// Comportamentos de impacto são excludentes (o primeiro vence em impact()):
+// na fusão, herdamos só UM deles.
+const IMPACT_FLAGS = ['timed', 'dart', 'cataclysm', 'airstrike', 'meteorstorm', 'meteor', 'dud', 'blackhole'];
+
+// Armas que podem ser fundidas (tira Turbo, Ctrl+D e as próprias fusões)
+function fusableWeapons() {
+  return activeWeapons().filter(w => !w.turbo && !w.deleteAll && !w.fused);
+}
+
+// Mistura duas cores #rrggbb
+function mixHex(h1, h2) {
+  const parse = (h) => {
+    h = h.replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  };
+  const a = parse(h1), b = parse(h2);
+  return '#' + a.map((v, i) => Math.round((v + b[i]) / 2).toString(16).padStart(2, '0')).join('');
+}
+
+function shortWeaponName(w) { return w.name.split(' ')[0].replace(/[()]/g, ''); }
+
+// Funde duas armas: soma o poder e combina os comportamentos
+function fuseWeapons(a, b) {
+  const w = {
+    fused: true,
+    name: shortWeaponName(a) + '-' + shortWeaponName(b),
+    radius: Math.min(140, Math.round(Math.max(a.radius, b.radius) * 1.12)),
+    damage: Math.min(120, Math.round(Math.max(a.damage, b.damage) + Math.min(a.damage, b.damage) * 0.5)),
+    color: mixHex(a.color, b.color),
+    cluster: Math.min(12, (a.cluster || 0) + (b.cluster || 0)),
+  };
+  // Modificadores que combinam livremente (voo/explosão)
+  if (a.napalm || b.napalm) w.napalm = true;
+  if (a.windBlast || b.windBlast) w.windBlast = true;
+  if (a.rocket || b.rocket) w.rocket = true;
+  if (a.magnet || b.magnet) w.magnet = true;
+  const bounce = Math.max(a.bounce || 0, b.bounce || 0); if (bounce) w.bounce = bounce;
+  const knock = Math.max(a.knockback || 0, b.knockback || 0); if (knock) w.knockback = knock;
+  // Comportamento de impacto: herda só um (da arma A se tiver, senão da B)
+  const src = IMPACT_FLAGS.some(f => a[f]) ? a : (IMPACT_FLAGS.some(f => b[f]) ? b : null);
+  if (src) IMPACT_FLAGS.forEach(f => { if (src[f]) w[f] = src[f]; });
+  w.icon = src ? src.icon : (a.damage >= b.damage ? a.icon : b.icon);
+  return w;
+}
+
+function addFusion(w) {
+  if (dlcState.fusions.length >= MAX_FUSIONS) return false;
+  dlcState.fusions.push(w);
+  dlcSave();
+  return true;
+}
+function removeFusion(i) { dlcState.fusions.splice(i, 1); dlcSave(); }
+
+// Armas base (de game.js) + extras adquiridas + fusões criadas
+function activeWeapons()  {
+  return WEAPONS.concat(EXTRA_WEAPONS.filter(w => ownsPack(w.pack))).concat(dlcState.fusions);
+}
 
 dlcLoad();
