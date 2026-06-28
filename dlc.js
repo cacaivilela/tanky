@@ -276,8 +276,37 @@ function mixHex(h1, h2) {
 
 function shortWeaponName(w) { return w.name.split(' ')[0].replace(/[()]/g, ''); }
 
+// Receitas especiais: certas combinações criam armas com habilidade ÚNICA
+const FUSION_RECIPES = [
+  // O pedido: chove 500 bombas-relógio pelo mapa
+  { a: 'Chuva de Meteoros', b: 'Bomba Relógio',
+    make: (color) => ({ fused: true, name: 'Tempestade-Relógio', icon: 'clock',
+      radius: 48, damage: 22, color, cluster: 0, timedstorm: 500 }) },
+  // Buraco negro gigante que implode em explosão nuclear flamejante
+  { a: 'Buraco Negro', b: 'Ogiva Nuclear',
+    make: (color) => ({ fused: true, name: 'Supernova', icon: 'blackhole',
+      radius: 72, damage: 85, color, cluster: 0, blackhole: true, napalm: true }) },
+  // Estilhaços em chamas
+  { a: 'Napalm', b: 'Cluster',
+    make: (color) => ({ fused: true, name: 'Inferno Estilhaçado', icon: 'flame',
+      radius: 50, damage: 34, color, cluster: 12, napalm: true }) },
+  // Projétil que quica E persegue o inimigo
+  { a: 'Saltitante', b: 'Ímã',
+    make: (color) => ({ fused: true, name: 'Caçador Saltitante', icon: 'magnet',
+      radius: 44, damage: 40, color, cluster: 0, bounce: 5, magnet: true }) },
+];
+
+function findRecipe(a, b) {
+  return FUSION_RECIPES.find(r =>
+    (r.a === a.name && r.b === b.name) || (r.a === b.name && r.b === a.name));
+}
+
 // Funde duas armas: soma o poder e combina os comportamentos
 function fuseWeapons(a, b) {
+  // Combinações especiais têm prioridade (habilidade única)
+  const recipe = findRecipe(a, b);
+  if (recipe) return recipe.make(mixHex(a.color, b.color));
+
   const w = {
     fused: true,
     name: shortWeaponName(a) + '-' + shortWeaponName(b),

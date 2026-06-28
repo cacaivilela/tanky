@@ -229,8 +229,8 @@ function groundBelow(x, fromY) {
   return H;
 }
 
-// Abre uma cratera no terreno
-function explode(x, y, radius) {
+// Abre a cratera no canvas SEM atualizar o buffer de colisão (barato)
+function carveCrater(x, y, radius) {
   tctx.globalCompositeOperation = 'destination-out';
   tctx.beginPath();
   tctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -245,7 +245,11 @@ function explode(x, y, radius) {
   tctx.arc(x, y, radius + 2, 0, Math.PI * 2);
   tctx.stroke();
   tctx.globalCompositeOperation = 'source-over';
+}
 
+// Abre uma cratera no terreno e atualiza o buffer de colisão
+function explode(x, y, radius) {
+  carveCrater(x, y, radius);
   refreshTerrainBuffer();
 }
 
@@ -316,6 +320,7 @@ function startGame(setup) {
     weapons: modeDef.sandbox ? activeWeapons().concat(SANDBOX_WEAPONS) : activeWeapons(),
     blackhole: null,  // arma DLC: campo de atração em andamento
     meteorRain: null, // chuva de meteoros em andamento
+    timedRain: null,  // chuva de bombas-relógio (fusão Tempestade-Relógio)
     terrainDirty: false, // crateras de meteoro pendentes de atualizar no buffer
     activeTeam: 0,
     teamTurnIdx: [0, -1], // time 0 começa no #0; time 1 ainda não jogou
@@ -738,6 +743,9 @@ function update() {
   // Chuva de meteoros: solta os dardos aos poucos
   updateMeteorRain();
 
+  // Tempestade-Relógio: faz chover bombas-relógio aos poucos
+  updateTimedRain();
+
   // Desaba Tudo: terra voando e desabando
   updateCataclysm();
 
@@ -749,7 +757,7 @@ function update() {
 
   // Transição de fim de turno (espera projéteis, bombrocas, cataclismo e a chuva de meteoros)
   if (game.state === 'firing' && game.projectiles.length === 0 &&
-      game.bombrocas.length === 0 && !game.cataclysm && !game.meteorRain) {
+      game.bombrocas.length === 0 && !game.cataclysm && !game.meteorRain && !game.timedRain) {
     game.state = 'settling';
     game.settleTimer = 40;
   }
@@ -763,8 +771,9 @@ function update() {
   }
   if (game.state === 'bombblast') {
     if (--game.blastTimer <= 0) {
-      // Estoura as bombas vencidas
-      for (const b of game.pendingBlasts) applyBlast(b.x, b.y, b.weapon);
+      // Estoura as bombas vencidas (atualiza o terreno só uma vez no fim:
+      // aguenta centenas de bombas explodindo juntas — Tempestade-Relógio)
+      massDetonate(game.pendingBlasts);
       game.bombs = game.bombs.filter(b => !game.pendingBlasts.includes(b));
       game.pendingBlasts = [];
       checkDeaths();
@@ -926,6 +935,11 @@ function detonate(p) {
     armBomb(p.x, p.y, p.weapon);
     return;
   }
+  // Tempestade-Relógio (fusão): faz chover centenas de bombas-relógio pelo mapa
+  if (p.weapon.timedstorm) {
+    startTimedStorm(p.x, p.y, p.weapon);
+    return;
+  }
   // Bombroca: um dardo que voa pelo mapa apagando tudo que toca por 12s
   if (p.weapon.dart) {
     startBombroca(p.x, p.y, p.weapon, p.vx, p.vy);
@@ -1074,6 +1088,37 @@ function updateMeteorRain() {
   }
   mr.remaining -= batch;
   if (mr.remaining <= 0) game.meteorRain = null;
+}
+
+// Explode uma lista de bombas de uma vez só, atualizando o buffer de colisão
+// apenas no final (evita centenas de getImageData no mesmo frame).
+function massDetonate(list) {
+  if (!list.length) return;
+  for (const b of list) applyBlast(b.x, b.y, b.weapon, true);
+  refreshTerrainBuffer();
+}
+
+// Tempestade-Relógio (fusão): começa a chuva de bombas-relógio sobre o mapa
+function startTimedStorm(x, y, weapon) {
+  applyBlast(x, y, { ...weapon, timedstorm: 0, radius: 30, damage: 14 }); // estouro inicial
+  game.timedRain = { weapon, remaining: weapon.timedstorm };
+}
+
+// Solta as bombas-relógio aos poucos (vários por frame), espalhadas pelo mapa.
+// Cada uma cai do alto, se arma onde toca e estoura no próximo turno.
+function updateTimedRain() {
+  const tr = game.timedRain;
+  if (!tr) return;
+  const batch = Math.min(tr.remaining, 16); // limita por frame (desempenho)
+  for (let i = 0; i < batch; i++) {
+    const ox = 20 + Math.random() * (W - 40);      // espalha pela largura toda
+    const sy = 8 + Math.random() * 80;             // começa lá no alto
+    game.projectiles.push(new Projectile(
+      ox, sy, (Math.random() * 2 - 1) * 0.6, 2 + Math.random() * 2,
+      { timed: true, radius: tr.weapon.radius, damage: tr.weapon.damage, color: tr.weapon.color }));
+  }
+  tr.remaining -= batch;
+  if (tr.remaining <= 0) game.timedRain = null;
 }
 
 // O dardo de meteoro EXPLODE (cratera + dano) e, ao explodir, gera alguns
@@ -1336,9 +1381,11 @@ function finishCataclysm() {
 }
 
 // Explosão de fato: cratera, partículas, dano e estilhaços
-function applyBlast(x, y, w) {
-  explode(x, y, w.radius);
-  spawnExplosion(x, y, w.color, w.radius);
+function applyBlast(x, y, w, defer) {
+  // defer = true: carve a cratera sem atualizar o buffer (quem chamou atualiza
+  // uma vez só, no fim) e solta menos partículas — para detonações em massa.
+  if (defer) carveCrater(x, y, w.radius); else explode(x, y, w.radius);
+  spawnExplosion(x, y, w.color, defer ? 10 : w.radius);
 
   // Dano aos tanques (proporcional à distância)
   for (const t of game.tanks) {
@@ -2544,6 +2591,7 @@ function weaponTraits(w) {
   if (w.rocket) t.push('propulsão');
   if (w.windBlast || w.knockback) t.push('empurra');
   if (w.timed) t.push('bomba-relógio');
+  if (w.timedstorm) t.push('chuva de 500 bombas-relógio');
   if (w.dart) t.push('dardo');
   if (w.airstrike) t.push('bombardeio');
   if (w.meteorstorm) t.push('meteoros');
