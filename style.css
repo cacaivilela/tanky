@@ -38,6 +38,30 @@ body {
   background: #1b1040;
 }
 
+/* Botão de ligar/desligar a música (canto superior direito) */
+#music-toggle {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  z-index: 100;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(13, 38, 71, 0.78);
+  color: #fff;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.08s;
+}
+#music-toggle:hover { background: rgba(13, 38, 71, 0.96); }
+#music-toggle:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+
 /* ---------- HUD topo ---------- */
 #hud {
   position: absolute;
