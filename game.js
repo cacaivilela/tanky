@@ -266,13 +266,14 @@ function deleteAllTerrain() {
 //  Início / reinício
 // ============================================================
 // setup: { teams: [ [isAI,...], [isAI,...] ] } — um booleano por tanque
-function startGame(setup) {
+function startGame(setup, modeOverride) {
   const counts = [setup.teams[0].length, setup.teams[1].length];
   const maxN = Math.max(counts[0], counts[1]);
 
-  // Cenário + modo escolhidos (com a física resultante)
+  // Cenário + modo escolhidos (com a física resultante).
+  // modeOverride: usado pelo botão Sandbox sem sujar o modo escolhido no menu.
   const scene = SCENES[loadout.scene] || SCENES.dia;
-  const modeDef = GAME_MODES[loadout.mode] || GAME_MODES.normal;
+  const modeDef = GAME_MODES[modeOverride || loadout.mode] || GAME_MODES.normal;
   const arena = ARENAS[loadout.arena] || ARENAS.padrao;
   renderScene = scene;
   renderArena = arena;
@@ -2404,9 +2405,8 @@ function wireMenu() {
   });
   document.getElementById('start-giga').addEventListener('click', showGigaConfig);
   document.getElementById('start-sandbox').addEventListener('click', () => {
-    loadout.mode = 'sandbox';      // força o modo Sandbox
     overlay.classList.add('hidden');
-    startGame(SETUPS.pvc);         // jogador contra o COM
+    startGame(SETUPS.pvc, 'sandbox'); // jogador contra o COM, só esta partida em Sandbox
   });
   document.getElementById('open-shop').addEventListener('click', openShop);
   document.getElementById('open-credits').addEventListener('click', showCredits);
@@ -2819,6 +2819,7 @@ function renderGigaGrid(tm, grid) {
 
 function showGameOver(winnerTeam, reward) {
   const setup = game.setup;
+  const modeId = game.modeDef.id; // repete a partida no mesmo modo (inclusive Sandbox)
   const win = winnerTeam != null;
   const color = win ? TEAM_COLORS[winnerTeam] : '#fff';
   const team = win ? game.teams[winnerTeam] : null;
@@ -2841,7 +2842,7 @@ function showGameOver(winnerTeam, reward) {
   overlay.classList.remove('hidden');
   document.getElementById('restart-btn').addEventListener('click', () => {
     overlay.classList.add('hidden');
-    startGame(setup);
+    startGame(setup, modeId);
   });
   document.getElementById('menu-btn').addEventListener('click', showMenu);
 }

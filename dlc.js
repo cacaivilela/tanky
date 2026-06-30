@@ -41,7 +41,7 @@ const DLC_PACKS = [
 // ---- Armas extras (entram na roda quando o pacote é adquirido) ----
 const EXTRA_WEAPONS = [
   { pack: 'arsenal', name: 'Buraco Negro',      icon: 'blackhole', radius: 46, damage: 30, color: '#a855f7', cluster: 0, blackhole: true },
-  { pack: 'arsenal', name: 'Chuva de Meteoros', icon: 'meteor',    radius: 32, damage: 24, color: '#fb923c', cluster: 0, airstrike: 500 },
+  { pack: 'arsenal', name: 'Chuva de Meteoros', icon: 'meteor',    radius: 32, damage: 24, color: '#fb923c', cluster: 0, meteorstorm: 500 },
   { pack: 'arsenal', name: 'Ogiva Nuclear',     icon: 'nuke',      radius: 95, damage: 80, color: '#fde047', cluster: 6, napalm: true },
 
   { pack: 'arsenal_pesado',  name: 'Dinamite',     icon: 'bomb',    radius: 70, damage: 70, color: '#f59e0b', cluster: 0 },
@@ -246,7 +246,7 @@ function finishInstall(id) {
 
 // Listas só com o que está liberado (mais o conteúdo grátis)
 function unlockedScenes() { return Object.values(SCENES).filter(s => packUnlocked(s.pack)); }
-function unlockedModes()  { return Object.values(GAME_MODES).filter(m => packUnlocked(m.pack)); }
+function unlockedModes()  { return Object.values(GAME_MODES).filter(m => packUnlocked(m.pack) && !m.sandbox); }
 function unlockedSkins()  { return Object.values(SKINS).filter(s => packUnlocked(s.pack)); }
 // ============================================================
 //  Fusão de armas — combina 2 armas em uma nova (salva no save)
