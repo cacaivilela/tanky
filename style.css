@@ -565,3 +565,98 @@ body {
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
+
+/* ============================================================
+   Edição de celular — controles de toque e aviso de girar a tela
+   ============================================================ */
+#touch-controls, #rotate-hint { display: none; }
+
+/* Os controles só aparecem em telas de toque e durante a batalha */
+body.is-touch.in-game #touch-controls { display: block; }
+
+#touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;                 /* só os botões capturam o toque */
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+.tc-cluster { position: absolute; pointer-events: auto; }
+.tc-cap {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.85;
+  color: #fff;
+  text-shadow: 0 1px 3px #000;
+  margin-bottom: 4px;
+}
+.tc-row { display: flex; gap: 10px; align-items: center; justify-content: center; }
+
+.tc-btn {
+  pointer-events: auto;
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(13, 38, 71, 0.62);
+  color: #fff;
+  font-size: 24px; font-weight: bold;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tc-btn.on {
+  background: rgba(77, 214, 255, 0.8);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+.tc-btn.tc-small { width: 46px; height: 46px; font-size: 18px; }
+
+.tc-aim  { left: 14px; bottom: 104px; }
+.tc-move { left: 14px; bottom: 16px; }
+.tc-right { right: 14px; bottom: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.tc-fire {
+  width: 92px; height: 92px;
+  font-size: 20px;
+  letter-spacing: 1px;
+  border-color: #fff;
+  background: linear-gradient(rgba(251, 113, 133, 0.92), rgba(220, 38, 38, 0.92));
+  box-shadow: 0 4px 0 #7f1d1d;
+}
+.tc-fire.on { transform: translateY(3px); box-shadow: 0 1px 0 #7f1d1d; filter: brightness(1.15); }
+
+.tc-ff { position: absolute; right: 16px; top: 92px; width: 52px; height: 52px; font-size: 16px; }
+
+/* Aviso para virar o celular (só em retrato, durante a batalha) */
+@media (orientation: portrait) {
+  body.is-touch.in-game #rotate-hint { display: flex; }
+}
+#rotate-hint {
+  position: fixed; inset: 0;
+  z-index: 200;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  background: rgba(8, 4, 18, 0.93);
+  color: #fff;
+  text-align: center;
+  padding: 30px;
+}
+.rh-ico { font-size: 64px; animation: rh-spin 2s ease-in-out infinite; }
+.rh-txt {
+  font-size: 20px; font-weight: bold; line-height: 1.5;
+  letter-spacing: 1px;
+  color: var(--neon-gold);
+  text-shadow: 0 0 12px rgba(255, 209, 102, 0.5);
+}
+@keyframes rh-spin {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(78deg); }
+}

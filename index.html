@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TANKY — Jogar Batalha de Tanques Online Grátis</title>
 <meta name="description" content="TANKY: jogue a batalha de tanques por turnos online e de graça! 2 jogadores, contra o computador, GIGA Battle, modo Sandbox e Loja DLC. Mire o ângulo, ajuste a potência e acerte o inimigo!">
 <meta name="keywords" content="tanky, tanky jogar, jogar tanky, jogo de tanques, batalha de tanques, tank, jogo online grátis, tanky online">
@@ -101,9 +101,44 @@
     </div>
   </div>
 
+  <!-- Controles de toque (edição de celular) — fora do #game-wrap para não
+       herdar a escala e manter os botões grandes em qualquer tela -->
+  <div id="touch-controls" aria-hidden="true">
+    <div class="tc-cluster tc-aim">
+      <div class="tc-cap">Mira</div>
+      <div class="tc-row">
+        <button class="tc-btn" type="button" data-hold="ArrowUp" aria-label="Subir a mira">▲</button>
+        <button class="tc-btn" type="button" data-hold="ArrowDown" aria-label="Descer a mira">▼</button>
+      </div>
+    </div>
+    <div class="tc-cluster tc-move">
+      <div class="tc-cap">Mover</div>
+      <div class="tc-row">
+        <button class="tc-btn" type="button" data-hold="ArrowLeft" aria-label="Mover para a esquerda">◀</button>
+        <button class="tc-btn" type="button" data-hold="ArrowRight" aria-label="Mover para a direita">▶</button>
+      </div>
+    </div>
+    <div class="tc-cluster tc-right">
+      <div class="tc-row">
+        <button class="tc-btn tc-small" type="button" data-weap="-1" aria-label="Arma anterior">◀</button>
+        <span class="tc-cap" style="margin:0">Arma</span>
+        <button class="tc-btn tc-small" type="button" data-weap="1" aria-label="Próxima arma">▶</button>
+      </div>
+      <button class="tc-btn tc-fire" type="button" id="tc-fire" aria-label="Atirar (segure para mais força)">FOGO</button>
+    </div>
+    <button class="tc-btn tc-ff" type="button" data-hold="v" aria-label="Acelerar a partida">»</button>
+  </div>
+
+  <!-- Aviso para virar o celular na horizontal -->
+  <div id="rotate-hint" aria-hidden="true">
+    <div class="rh-ico">📱</div>
+    <div class="rh-txt">Vire o celular na horizontal<br>para jogar melhor!</div>
+  </div>
+
   <script src="pixelart.js"></script>
   <script src="dlc.js"></script>
   <script src="music.js"></script>
   <script src="game.js"></script>
+  <script src="mobile.js"></script>
 </body>
 </html>
